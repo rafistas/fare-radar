@@ -1,6 +1,9 @@
+import { initStore } from './lib/store.mjs';
 import { runCheck } from './lib/check.mjs';
 
-export const handler = async () => {
+export const handler = async (event) => {
+  initStore(event);
+
   try {
     const result = await runCheck();
     return {

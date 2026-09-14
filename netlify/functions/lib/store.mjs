@@ -1,11 +1,26 @@
-import { getStore } from '@netlify/blobs';
+import { connectLambda, getStore } from '@netlify/blobs';
 import fs from 'fs';
 import path from 'path';
 
 const STORE_NAME = process.env.STORE_NAME || 'fare-radar';
 const LOWEST_KEY = 'lowest-price';
 const CURSOR_KEY = 'scan-cursor';
-const LOCAL_STORE_FILE = path.resolve('.netlify', 'local-store.json');
+const FARES_KEY = 'known-fares-map';
+
+// Em ambiente AWS Lambda (Netlify), apenas /tmp é gravável caso haja fallback local
+const LOCAL_STORE_FILE = process.env.AWS_LAMBDA_FUNCTION_NAME
+  ? path.join('/tmp', 'local-store.json')
+  : path.resolve('.netlify', 'local-store.json');
+
+export function initStore(event) {
+  if (event) {
+    try {
+      connectLambda(event);
+    } catch (err) {
+      // Ignora erro se já conectado ou em ambiente local
+    }
+  }
+}
 
 function getLocalStore() {
   try {
@@ -32,6 +47,7 @@ function getBlobsStore() {
   try {
     return getStore(STORE_NAME);
   } catch (err) {
+    console.warn('Aviso ao inicializar Netlify Blobs:', err.message);
     return null;
   }
 }
@@ -41,9 +57,9 @@ export async function getLowestKnown() {
   if (store) {
     try {
       const raw = await store.get(LOWEST_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (raw) return JSON.parse(raw);
     } catch (e) {
-      // Em caso de erro com Blobs, usa fallback local
+      console.warn('Aviso: erro ao ler do Netlify Blobs:', e.message);
     }
   }
   const local = getLocalStore();
@@ -57,7 +73,7 @@ export async function setLowestKnown(data) {
       await store.set(LOWEST_KEY, JSON.stringify(data));
       return;
     } catch (e) {
-      // Em caso de erro com Blobs, usa fallback local
+      console.warn('Aviso: erro ao gravar no Netlify Blobs:', e.message);
     }
   }
   const local = getLocalStore();
@@ -70,9 +86,9 @@ export async function getCursor() {
   if (store) {
     try {
       const raw = await store.get(CURSOR_KEY);
-      return raw ? Number(raw) : 0;
+      if (raw !== null && raw !== undefined) return Number(raw);
     } catch (e) {
-      // Em caso de erro com Blobs, usa fallback local
+      console.warn('Aviso: erro ao ler cursor no Netlify Blobs:', e.message);
     }
   }
   const local = getLocalStore();
@@ -86,7 +102,7 @@ export async function setCursor(value) {
       await store.set(CURSOR_KEY, String(value));
       return;
     } catch (e) {
-      // Em caso de erro com Blobs, usa fallback local
+      console.warn('Aviso: erro ao gravar cursor no Netlify Blobs:', e.message);
     }
   }
   const local = getLocalStore();
@@ -94,15 +110,15 @@ export async function setCursor(value) {
   setLocalStore(local);
 }
 
-const FARES_KEY = 'known-fares-map';
-
 export async function getAllFares() {
   const store = getBlobsStore();
   if (store) {
     try {
       const raw = await store.get(FARES_KEY);
       if (raw) return JSON.parse(raw);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Aviso: erro ao ler fares no Netlify Blobs:', e.message);
+    }
   }
   const local = getLocalStore();
   return local[FARES_KEY] || {};
@@ -129,11 +145,11 @@ export async function saveFares(newFares) {
   if (store) {
     try {
       await store.set(FARES_KEY, JSON.stringify(currentFares));
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Aviso: erro ao salvar fares no Netlify Blobs:', e.message);
+    }
   }
   const local = getLocalStore();
   local[FARES_KEY] = currentFares;
   setLocalStore(local);
 }
-
-

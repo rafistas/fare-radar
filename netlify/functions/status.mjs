@@ -1,4 +1,4 @@
-import { getLowestKnown, getCursor, getAllFares } from './lib/store.mjs';
+import { initStore, getLowestKnown, getCursor, getAllFares } from './lib/store.mjs';
 
 const ORIGIN = process.env.ORIGIN_IATA || 'CGB';
 const DESTINATION = process.env.DESTINATION_IATA || 'JPA';
@@ -8,7 +8,9 @@ const MIN_DURATION = Number(process.env.MIN_DURATION || 5);
 const MAX_DURATION = Number(process.env.MAX_DURATION || 8);
 const BATCH_SIZE = Number(process.env.BATCH_SIZE || 2);
 
-export const handler = async () => {
+export const handler = async (event) => {
+  initStore(event);
+
   const lowest = await getLowestKnown();
   const cursor = await getCursor();
   const faresMap = await getAllFares();
@@ -48,4 +50,3 @@ export const handler = async () => {
     }),
   };
 };
-
