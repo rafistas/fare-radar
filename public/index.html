@@ -2,7 +2,13 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#070a11" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FareRadar" />
+  <meta name="description" content="FareRadar · Monitor inteligente de passagens aéreas CGB para JPA com SerpApi e Google Flights." />
   <title>FareRadar · CGB → JPA · Monitor Inteligente de Voos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -41,6 +47,7 @@
 
     body {
       min-height: 100vh;
+      min-height: -webkit-fill-available;
       background-color: var(--bg-dark);
       background-image: 
         radial-gradient(circle at 50% -10%, rgba(56, 189, 248, 0.12), transparent 45%),
@@ -51,9 +58,11 @@
       font-family: var(--font-sans);
       display: flex;
       justify-content: center;
-      padding: 36px 20px 60px;
+      padding: max(28px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(48px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      text-rendering: optimizeLegibility;
     }
 
     .container {
@@ -69,13 +78,15 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 8px;
+      padding-bottom: 6px;
+      gap: 12px;
     }
 
     .brand {
       display: flex;
       align-items: center;
       gap: 12px;
+      min-width: 0;
     }
 
     .brand-icon {
@@ -89,6 +100,7 @@
       justify-content: center;
       color: var(--cyan);
       box-shadow: 0 0 20px var(--cyan-glow);
+      flex-shrink: 0;
     }
 
     .brand-title {
@@ -99,6 +111,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      white-space: nowrap;
     }
 
     .brand-title span {
@@ -109,6 +122,45 @@
       font-size: 12px;
       color: var(--text-dim);
       font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon-reload {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-icon-reload:hover {
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--cyan);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-icon-reload:active {
+      transform: scale(0.92);
+    }
+
+    .btn-icon-reload.spinning svg {
+      animation: spin 0.7s linear infinite;
     }
 
     .status-badge {
@@ -123,6 +175,11 @@
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+
+    .badge-text-short {
+      display: none;
     }
 
     .pulse-dot {
@@ -132,6 +189,7 @@
       background: var(--emerald);
       box-shadow: 0 0 10px var(--emerald);
       animation: pulse 2s infinite ease-in-out;
+      flex-shrink: 0;
     }
 
     @keyframes pulse {
@@ -169,6 +227,20 @@
       margin-bottom: 16px;
     }
 
+    .route-header-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .route-header-badge {
+      font-size: 12px;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
     .route-airports {
       display: flex;
       align-items: center;
@@ -178,6 +250,11 @@
 
     .airport-box {
       flex: 1;
+      min-width: 0;
+    }
+
+    .airport-box-dest {
+      text-align: right;
     }
 
     .airport-code {
@@ -194,6 +271,7 @@
       color: var(--text-muted);
       font-weight: 500;
       margin-top: 2px;
+      line-height: 1.35;
     }
 
     .flight-divider {
@@ -241,7 +319,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 12px;
+      padding: 5px 12px;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 9999px;
@@ -283,8 +361,9 @@
     .fare-header {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
       margin-bottom: 20px;
+      gap: 8px;
     }
 
     .badge-record {
@@ -300,12 +379,14 @@
       color: #6ee7b7;
       text-transform: uppercase;
       letter-spacing: 0.8px;
+      white-space: nowrap;
     }
 
     .found-timestamp {
       font-size: 12px;
       color: var(--text-dim);
       font-weight: 500;
+      text-align: right;
     }
 
     .price-container {
@@ -350,6 +431,10 @@
       gap: 4px;
     }
 
+    .ticket-item-in {
+      text-align: right;
+    }
+
     .ticket-label {
       font-size: 11px;
       text-transform: uppercase;
@@ -361,20 +446,32 @@
       gap: 6px;
     }
 
+    .ticket-item-in .ticket-label {
+      justify-content: flex-end;
+    }
+
     .ticket-label .dot-dir {
       width: 6px;
       height: 6px;
       border-radius: 50%;
+      flex-shrink: 0;
     }
 
     .ticket-label .dot-out { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
     .ticket-label .dot-in { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); }
+
+    .ticket-date-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
     .ticket-date {
       font-family: var(--font-mono);
       font-size: 15px;
       font-weight: 600;
       color: #f1f5f9;
+      line-height: 1.2;
     }
 
     .ticket-weekday {
@@ -393,6 +490,13 @@
       border-right: 1px dashed rgba(255, 255, 255, 0.1);
     }
 
+    .divider-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+    }
+
     .duration-pill {
       font-size: 11px;
       font-weight: 600;
@@ -402,6 +506,9 @@
       border-radius: 9999px;
       color: var(--cyan);
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .empty-state {
@@ -426,18 +533,26 @@
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.12);
       color: #fff;
-      padding: 12px 18px;
+      padding: 13px 18px;
+      min-height: 48px;
       border-radius: 12px;
       font-size: 13px;
       font-weight: 600;
       text-decoration: none;
       transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     .btn-google-flights:hover {
       background: rgba(255, 255, 255, 0.1);
       border-color: rgba(255, 255, 255, 0.25);
       transform: translateY(-1px);
+    }
+
+    .btn-google-flights:active {
+      transform: scale(0.985);
+      background: rgba(255, 255, 255, 0.14);
     }
 
     /* Ranking Section */
@@ -457,17 +572,19 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
     }
 
     .ranking-title-group {
       display: flex;
       align-items: center;
       gap: 10px;
+      min-width: 0;
     }
 
     .ranking-icon {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 8px;
       background: rgba(245, 158, 11, 0.12);
       border: 1px solid rgba(245, 158, 11, 0.25);
@@ -475,17 +592,21 @@
       align-items: center;
       justify-content: center;
       color: var(--amber);
+      flex-shrink: 0;
     }
 
     .ranking-title {
       font-size: 15px;
       font-weight: 700;
       color: #fff;
+      line-height: 1.25;
     }
 
     .ranking-subtitle {
       font-size: 12px;
       color: var(--text-dim);
+      margin-top: 2px;
+      line-height: 1.35;
     }
 
     .ranking-count-badge {
@@ -496,6 +617,8 @@
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
       color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .ranking-list {
@@ -504,6 +627,7 @@
       gap: 8px;
     }
 
+    /* Interactive tappable ranking card */
     .ranking-row {
       display: flex;
       align-items: center;
@@ -514,12 +638,23 @@
       border-radius: 12px;
       transition: all 0.2s ease;
       gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     .ranking-row:hover {
       background: var(--bg-card-hover);
       border-color: rgba(56, 189, 248, 0.25);
       transform: translateX(2px);
+    }
+
+    .ranking-row:active {
+      background: rgba(56, 189, 248, 0.08);
+      border-color: rgba(56, 189, 248, 0.35);
+      transform: scale(0.985);
     }
 
     .rank-col-pos {
@@ -562,6 +697,7 @@
 
     .rank-col-dates {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 2px;
@@ -575,6 +711,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      flex-wrap: wrap;
     }
 
     .rank-dates-text .arrow {
@@ -595,7 +732,8 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 2px;
+      gap: 3px;
+      flex-shrink: 0;
     }
 
     .rank-price-val {
@@ -605,22 +743,23 @@
       color: #fff;
     }
 
-    .rank-btn-link {
+    .rank-btn-badge {
       display: inline-flex;
       align-items: center;
       gap: 4px;
       font-size: 11px;
       color: var(--cyan);
-      text-decoration: none;
       font-weight: 600;
-      padding: 2px 6px;
-      border-radius: 4px;
-      transition: background 0.15s;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      transition: all 0.15s;
     }
 
-    .rank-btn-link:hover {
-      background: rgba(56, 189, 248, 0.1);
-      text-decoration: underline;
+    .ranking-row:hover .rank-btn-badge {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: rgba(56, 189, 248, 0.4);
     }
 
     .ranking-footer-note {
@@ -630,6 +769,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      line-height: 1.4;
     }
 
     /* Progress Section */
@@ -688,6 +828,7 @@
       justify-content: space-between;
       font-size: 12px;
       color: var(--text-dim);
+      gap: 8px;
     }
 
     /* Search Action & Logs */
@@ -706,6 +847,7 @@
     .btn-primary {
       width: 100%;
       padding: 16px 24px;
+      min-height: 52px;
       background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
       border: 1px solid rgba(56, 189, 248, 0.4);
       color: #ffffff;
@@ -720,6 +862,8 @@
       gap: 10px;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 8px 24px -4px rgba(2, 132, 199, 0.4);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     .btn-primary:hover:not(:disabled) {
@@ -729,7 +873,8 @@
     }
 
     .btn-primary:active:not(:disabled) {
-      transform: translateY(0);
+      transform: scale(0.98);
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
     }
 
     .btn-primary:disabled {
@@ -769,6 +914,7 @@
       align-items: center;
       gap: 10px;
       animation: fadeIn 0.3s ease;
+      line-height: 1.45;
     }
 
     @keyframes fadeIn {
@@ -845,26 +991,272 @@
       line-height: 1.6;
     }
 
-    /* Responsive adjustments */
-    @media (max-width: 520px) {
+    /* Responsive adjustments for Mobile */
+    @media (max-width: 540px) {
       body {
-        padding: 20px 14px 40px;
+        padding: max(16px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(36px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
       }
+
+      .container {
+        gap: 16px;
+      }
+
+      .top-bar {
+        padding-bottom: 2px;
+      }
+
+      .brand {
+        gap: 10px;
+      }
+
+      .brand-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+      }
+
+      .brand-title {
+        font-size: 16px;
+      }
+
+      .brand-subtitle {
+        font-size: 11px;
+      }
+
+      .status-badge {
+        padding: 5px 10px;
+        font-size: 11px;
+      }
+
+      .badge-text-full {
+        display: none;
+      }
+
+      .badge-text-short {
+        display: inline;
+      }
+
+      .btn-icon-reload {
+        width: 30px;
+        height: 30px;
+      }
+
+      .route-card {
+        padding: 18px 16px;
+        border-radius: 18px;
+      }
+
       .airport-code {
-        font-size: 30px;
+        font-size: 28px;
       }
+
+      .airport-city {
+        font-size: 11px;
+        line-height: 1.25;
+        margin-top: 3px;
+      }
+
+      .flight-divider {
+        flex: 0.7;
+      }
+
+      .plane-badge {
+        width: 26px;
+        height: 26px;
+      }
+
+      .route-tags {
+        gap: 6px;
+        margin-top: 14px;
+        padding-top: 12px;
+      }
+
+      .tag-pill {
+        font-size: 11px;
+        padding: 4px 9px;
+      }
+
+      .fare-card {
+        padding: 20px 16px;
+        border-radius: 18px;
+      }
+
+      .fare-header {
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .badge-record {
+        font-size: 10px;
+        padding: 4px 10px;
+      }
+
+      .found-timestamp {
+        font-size: 11px;
+      }
+
+      .price-container {
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+      }
+
       .price-number {
         font-size: 42px;
+        letter-spacing: -1px;
       }
+
+      /* Mobile Itinerary Ticket: Structured top-to-bottom boarding legs */
       .ticket-grid {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 8px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(10, 15, 26, 0.85);
       }
+
+      .ticket-item {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+
+      .ticket-item-in {
+        text-align: left;
+      }
+
+      .ticket-item-in .ticket-label {
+        justify-content: flex-start;
+      }
+
+      .ticket-date-group {
+        text-align: right;
+        align-items: flex-end;
+      }
+
+      .ticket-date {
+        font-size: 14px;
+      }
+
+      .ticket-weekday {
+        font-size: 11px;
+      }
+
       .ticket-divider {
+        flex-direction: row;
+        justify-content: center;
+        gap: 8px;
         border: none;
-        border-top: 1px dashed rgba(255, 255, 255, 0.1);
-        border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-        padding: 8px 0;
+        padding: 2px 0;
+      }
+
+      .divider-arrow {
+        transform: rotate(90deg);
+        opacity: 0.6;
+      }
+
+      .btn-google-flights {
+        padding: 12px 16px;
+        font-size: 13px;
+      }
+
+      .ranking-card {
+        padding: 18px 16px;
+        border-radius: 18px;
+      }
+
+      .ranking-header {
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: flex-start;
+      }
+
+      .ranking-title {
+        font-size: 14px;
+      }
+
+      .ranking-subtitle {
+        font-size: 11px;
+      }
+
+      .ranking-row {
+        padding: 11px 12px;
+        gap: 10px;
+      }
+
+      .rank-dates-text {
+        font-size: 12px;
+        gap: 3px 5px;
+      }
+
+      .rank-meta-text {
+        font-size: 10.5px;
+      }
+
+      .rank-price-val {
+        font-size: 15px;
+      }
+
+      .progress-card {
+        padding: 18px 16px;
+        border-radius: 16px;
+      }
+
+      .progress-caption {
+        font-size: 11px;
+        gap: 4px;
+      }
+
+      .control-card {
+        padding: 18px 16px;
+        border-radius: 16px;
+      }
+
+      .btn-primary {
+        padding: 14px 20px;
+        font-size: 14px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      .stat-card {
+        padding: 11px 12px;
+        border-radius: 12px;
+      }
+
+      .stat-label {
+        font-size: 10px;
+      }
+
+      .stat-value {
+        font-size: 12px;
+        flex-wrap: wrap;
+        gap: 3px;
+      }
+
+      .stat-value .sub {
+        font-size: 10px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .airport-code {
+        font-size: 25px;
+      }
+      .price-number {
+        font-size: 36px;
+      }
+      .progress-caption {
+        flex-direction: column;
       }
       .stats-grid {
         grid-template-columns: 1fr;
@@ -885,27 +1277,37 @@
       </div>
       <div>
         <h1 class="brand-title">Fare<span>Radar</span></h1>
-        <p class="brand-subtitle">Google Flights · SerpApi Intelligence</p>
+        <p class="brand-subtitle">Google Flights · SerpApi</p>
       </div>
     </div>
 
-    <div class="status-badge" id="systemBadge">
-      <span class="pulse-dot"></span>
-      <span>Monitor Ativo (6h)</span>
+    <div class="header-actions">
+      <button class="btn-icon-reload" id="btnReloadStatus" title="Atualizar dados salvos (sem gastar API)" aria-label="Atualizar dados salvos">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+
+      <div class="status-badge" id="systemBadge">
+        <span class="pulse-dot"></span>
+        <span class="badge-text-full">Monitor Ativo (6h)</span>
+        <span class="badge-text-short">Ativo 6h</span>
+      </div>
     </div>
   </header>
 
   <!-- Route Card -->
   <section class="route-card">
     <div class="route-header">
-      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px; color: var(--text-dim); text-transform: uppercase;">Rota Monitorada</span>
-      <span style="font-size: 12px; color: var(--cyan); font-weight: 600;">Ida e Volta</span>
+      <span class="route-header-label">Rota Monitorada</span>
+      <span class="route-header-badge">Ida e Volta</span>
     </div>
 
     <div class="route-airports">
-      <div class="airport-box">
+      <div class="airport-box airport-box-origin">
         <div class="airport-code" id="originCode">CGB</div>
-        <div class="airport-city">Cuiabá · Marechal Rondon</div>
+        <div class="airport-city">Cuiabá · Mal. Rondon</div>
       </div>
 
       <div class="flight-divider">
@@ -918,7 +1320,7 @@
         </div>
       </div>
 
-      <div class="airport-box" style="text-align: right;">
+      <div class="airport-box airport-box-dest">
         <div class="airport-code" id="destCode">JPA</div>
         <div class="airport-city">João Pessoa · Castro Pinto</div>
       </div>
@@ -931,7 +1333,7 @@
       </div>
       <div class="tag-pill">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        <span>5 a 8 dias de permanência</span>
+        <span>5 a 8 dias de viagem</span>
       </div>
       <div class="tag-pill">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -968,7 +1370,7 @@
         </div>
         <div>
           <h2 class="ranking-title">Ranking de Melhores Datas</h2>
-          <p class="ranking-subtitle">Menores tarifas acumuladas na varredura (sem custo extra)</p>
+          <p class="ranking-subtitle">Menores tarifas acumuladas na varredura</p>
         </div>
       </div>
       <span class="ranking-count-badge" id="rankingCountBadge">0 datas avaliadas</span>
@@ -976,7 +1378,7 @@
 
     <div class="ranking-list" id="rankingList">
       <div class="empty-state" style="padding: 18px;">
-        <p style="font-size: 13px; color: var(--text-dim);">Nenhuma outra data registrada ainda.</p>
+        <p style="font-size: 13px; color: var(--text-dim);">Nenhuma data catalogada no ranking ainda.</p>
       </div>
     </div>
 
@@ -1008,7 +1410,7 @@
     </div>
   </section>
 
-  <!-- Search Control Section -->
+  <!-- Search Action & Logs -->
   <section class="control-card">
     <button class="btn-primary" id="btnCheckNow">
       <span class="spinner"></span>
@@ -1037,11 +1439,11 @@
     </div>
     <div class="stat-card">
       <div class="stat-label">Lote por Busca</div>
-      <div class="stat-value">2 combinações <span class="sub">(~240/mês)</span></div>
+      <div class="stat-value">2 por lote <span class="sub">(~240/mês)</span></div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Notificação</div>
-      <div class="stat-value">Telegram Bot <span class="sub">(Instantâneo)</span></div>
+      <div class="stat-value">Bot Telegram <span class="sub">(Instantâneo)</span></div>
     </div>
   </section>
 
@@ -1065,6 +1467,7 @@
   const destCode = document.getElementById('destCode');
   const rankingList = document.getElementById('rankingList');
   const rankingCountBadge = document.getElementById('rankingCountBadge');
+  const btnReloadStatus = document.getElementById('btnReloadStatus');
 
   let currentConfig = {
     origin: 'CGB',
@@ -1140,29 +1543,38 @@
       </div>
 
       <div class="ticket-grid">
-        <div class="ticket-item">
+        <div class="ticket-item ticket-item-out">
           <div class="ticket-label">
             <span class="dot-dir dot-out"></span>
             <span>Ida · ${currentConfig.origin}</span>
           </div>
-          <div class="ticket-date">${dep.formatted}</div>
-          <div class="ticket-weekday">${dep.weekday}</div>
+          <div class="ticket-date-group">
+            <div class="ticket-date">${dep.formatted}</div>
+            <div class="ticket-weekday">${dep.weekday}</div>
+          </div>
         </div>
 
         <div class="ticket-divider">
-          <span class="duration-pill">${nights} noites</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-dim);">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
+          <span class="duration-pill">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>${nights} noites</span>
+          </span>
+          <div class="divider-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
         </div>
 
-        <div class="ticket-item" style="text-align: right;">
-          <div class="ticket-label" style="justify-content: flex-end;">
-            <span>Volta · ${currentConfig.destination}</span>
+        <div class="ticket-item ticket-item-in">
+          <div class="ticket-label">
             <span class="dot-dir dot-in"></span>
+            <span>Volta · ${currentConfig.destination}</span>
           </div>
-          <div class="ticket-date">${ret.formatted}</div>
-          <div class="ticket-weekday">${ret.weekday}</div>
+          <div class="ticket-date-group">
+            <div class="ticket-date">${ret.formatted}</div>
+            <div class="ticket-weekday">${ret.weekday}</div>
+          </div>
         </div>
       </div>
 
@@ -1205,7 +1617,7 @@
       const gfUrl = `https://www.google.com/travel/flights?q=Flights%20to%20${currentConfig.destination}%20from%20${currentConfig.origin}%20on%20${item.departureDate}%20through%20${item.returnDate}`;
 
       return `
-        <div class="ranking-row">
+        <a href="${gfUrl}" target="_blank" rel="noopener noreferrer" class="ranking-row" title="Ver voo no Google Flights">
           <div class="rank-col-pos ${posClass}">
             ${pos === 1 ? '1º' : pos === 2 ? '2º' : pos === 3 ? '3º' : pos + 'º'}
           </div>
@@ -1225,14 +1637,14 @@
 
           <div class="rank-col-price">
             <div class="rank-price-val">${price}</div>
-            <a href="${gfUrl}" target="_blank" rel="noopener noreferrer" class="rank-btn-link">
+            <div class="rank-btn-badge">
               <span>Ver voo</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
               </svg>
-            </a>
+            </div>
           </div>
-        </div>
+        </a>
       `;
     }).join('');
   }
@@ -1274,6 +1686,14 @@
       console.error(err);
       foundTime.textContent = 'Erro ao carregar dados';
     }
+  }
+
+  if (btnReloadStatus) {
+    btnReloadStatus.addEventListener('click', async () => {
+      btnReloadStatus.classList.add('spinning');
+      await loadStatus();
+      setTimeout(() => btnReloadStatus.classList.remove('spinning'), 500);
+    });
   }
 
   async function checkNow() {
