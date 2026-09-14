@@ -1,0 +1,1326 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FareRadar · CGB → JPA · Monitor Inteligente de Voos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-dark: #070a11;
+      --bg-card: rgba(16, 23, 38, 0.72);
+      --bg-card-hover: rgba(22, 32, 54, 0.85);
+      --bg-card-inner: rgba(10, 15, 26, 0.6);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(14, 165, 233, 0.5);
+      
+      --cyan: #38bdf8;
+      --cyan-glow: rgba(56, 189, 248, 0.25);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.25);
+      --rose: #f43f5e;
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% -10%, rgba(56, 189, 248, 0.12), transparent 45%),
+        radial-gradient(circle at 10% 30%, rgba(16, 185, 129, 0.05), transparent 40%),
+        radial-gradient(circle at 90% 70%, rgba(245, 158, 11, 0.04), transparent 40%),
+        linear-gradient(180deg, #070a11 0%, #0a0f1d 100%);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      display: flex;
+      justify-content: center;
+      padding: 36px 20px 60px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(16, 185, 129, 0.1));
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--cyan);
+      box-shadow: 0 0 20px var(--cyan-glow);
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: -0.3px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-title span {
+      color: var(--cyan);
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: #6ee7b7;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 10px var(--emerald);
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Route Banner Card */
+    .route-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px 28px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 36px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    .route-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4), transparent);
+    }
+
+    .route-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .route-airports {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .airport-box {
+      flex: 1;
+    }
+
+    .airport-code {
+      font-family: var(--font-mono);
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .airport-city {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .flight-divider {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1.2;
+      position: relative;
+    }
+
+    .flight-path {
+      width: 100%;
+      height: 2px;
+      background: repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0, rgba(255,255,255,0.15) 6px, transparent 6px, transparent 12px);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .plane-badge {
+      width: 28px;
+      height: 28px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-focus);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--cyan);
+      box-shadow: 0 0 14px var(--cyan-glow);
+    }
+
+    .route-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .tag-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .tag-pill.highlight {
+      background: rgba(56, 189, 248, 0.08);
+      border-color: rgba(56, 189, 248, 0.2);
+      color: var(--cyan);
+    }
+
+    /* Primary Fare Hero Card */
+    .fare-card {
+      background: linear-gradient(160deg, rgba(20, 29, 48, 0.85) 0%, rgba(12, 17, 30, 0.9) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 20px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.06);
+    }
+
+    .fare-card::after {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 160px;
+      height: 160px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .fare-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .badge-record {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.15), rgba(56, 189, 248, 0.15));
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #6ee7b7;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .found-timestamp {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .price-container {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .price-number {
+      font-family: var(--font-mono);
+      font-size: 56px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: -1.5px;
+      text-shadow: 0 0 24px rgba(255, 255, 255, 0.15);
+    }
+
+    .price-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Ticket Segments Layout */
+    .ticket-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 14px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    .ticket-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .ticket-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ticket-label .dot-dir {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .ticket-label .dot-out { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+    .ticket-label .dot-in { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); }
+
+    .ticket-date {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    .ticket-weekday {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .ticket-divider {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 0 8px;
+      border-left: 1px dashed rgba(255, 255, 255, 0.1);
+      border-right: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+
+    .duration-pill {
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      color: var(--cyan);
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .fare-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn-google-flights {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-google-flights:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    /* Ranking Section */
+    .ranking-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .ranking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ranking-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ranking-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--amber);
+    }
+
+    .ranking-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .ranking-subtitle {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .ranking-count-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ranking-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      gap: 12px;
+    }
+
+    .ranking-row:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(56, 189, 248, 0.25);
+      transform: translateX(2px);
+    }
+
+    .rank-col-pos {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    .rank-pos-1 {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(251, 191, 36, 0.1));
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+    }
+
+    .rank-pos-2 {
+      background: linear-gradient(135deg, rgba(148, 163, 184, 0.2), rgba(203, 213, 225, 0.1));
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      color: #e2e8f0;
+    }
+
+    .rank-pos-3 {
+      background: linear-gradient(135deg, rgba(180, 83, 9, 0.2), rgba(217, 119, 6, 0.1));
+      border: 1px solid rgba(180, 83, 9, 0.3);
+      color: #f59e0b;
+    }
+
+    .rank-pos-other {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+    }
+
+    .rank-col-dates {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .rank-dates-text {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rank-dates-text .arrow {
+      color: var(--cyan);
+      font-size: 11px;
+    }
+
+    .rank-meta-text {
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rank-col-price {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .rank-price-val {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .rank-btn-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--cyan);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+
+    .rank-btn-link:hover {
+      background: rgba(56, 189, 248, 0.1);
+      text-decoration: underline;
+    }
+
+    .ranking-footer-note {
+      font-size: 11px;
+      color: var(--text-dim);
+      padding-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Progress Section */
+    .progress-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px 24px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .progress-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .progress-val {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--cyan);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0284c7, #38bdf8, #10b981);
+      border-radius: 9999px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    .progress-caption {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* Search Action & Logs */
+    .control-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #ffffff;
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 15px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 24px -4px rgba(2, 132, 199, 0.4);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      box-shadow: 0 12px 30px -4px rgba(14, 165, 233, 0.55);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .btn-primary.loading .spinner {
+      display: inline-block;
+    }
+
+    .btn-primary.loading .btn-icon {
+      display: none;
+    }
+
+    /* Result Banner / Toast */
+    .feedback-box {
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 13px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .feedback-box.info {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: #bae6fd;
+    }
+
+    .feedback-box.success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #a7f3d0;
+    }
+
+    .feedback-box.error {
+      background: rgba(244, 63, 94, 0.1);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      color: #fecdd3;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-value .sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding-top: 10px;
+      color: var(--text-dim);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 520px) {
+      body {
+        padding: 20px 14px 40px;
+      }
+      .airport-code {
+        font-size: 30px;
+      }
+      .price-number {
+        font-size: 42px;
+      }
+      .ticket-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .ticket-divider {
+        border: none;
+        border-top: 1px dashed rgba(255, 255, 255, 0.1);
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+        padding: 8px 0;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<main class="container">
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="brand-title">Fare<span>Radar</span></h1>
+        <p class="brand-subtitle">Google Flights · SerpApi Intelligence</p>
+      </div>
+    </div>
+
+    <div class="status-badge" id="systemBadge">
+      <span class="pulse-dot"></span>
+      <span>Monitor Ativo (6h)</span>
+    </div>
+  </header>
+
+  <!-- Route Card -->
+  <section class="route-card">
+    <div class="route-header">
+      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.8px; color: var(--text-dim); text-transform: uppercase;">Rota Monitorada</span>
+      <span style="font-size: 12px; color: var(--cyan); font-weight: 600;">Ida e Volta</span>
+    </div>
+
+    <div class="route-airports">
+      <div class="airport-box">
+        <div class="airport-code" id="originCode">CGB</div>
+        <div class="airport-city">Cuiabá · Marechal Rondon</div>
+      </div>
+
+      <div class="flight-divider">
+        <div class="flight-path">
+          <div class="plane-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="airport-box" style="text-align: right;">
+        <div class="airport-code" id="destCode">JPA</div>
+        <div class="airport-city">João Pessoa · Castro Pinto</div>
+      </div>
+    </div>
+
+    <div class="route-tags">
+      <div class="tag-pill highlight">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Novembro / 2026</span>
+      </div>
+      <div class="tag-pill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>5 a 8 dias de permanência</span>
+      </div>
+      <div class="tag-pill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <span>Alerta via Telegram</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hero Fare Card -->
+  <section class="fare-card" id="fareCard">
+    <div class="fare-header">
+      <div class="badge-record">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span>Menor Tarifa Detectada</span>
+      </div>
+      <div class="found-timestamp" id="foundTime">Carregando dados…</div>
+    </div>
+
+    <div id="fareContent">
+      <div class="empty-state">
+        <p>Consultando histórico de buscas…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ranking Section (Zero API Cost) -->
+  <section class="ranking-card" id="rankingCard">
+    <div class="ranking-header">
+      <div class="ranking-title-group">
+        <div class="ranking-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1c1.94-.38 3.5-1.99 3.61-4.06C19.08 11.63 21 9.55 21 7V5c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="ranking-title">Ranking de Melhores Datas</h2>
+          <p class="ranking-subtitle">Menores tarifas acumuladas na varredura (sem custo extra)</p>
+        </div>
+      </div>
+      <span class="ranking-count-badge" id="rankingCountBadge">0 datas avaliadas</span>
+    </div>
+
+    <div class="ranking-list" id="rankingList">
+      <div class="empty-state" style="padding: 18px;">
+        <p style="font-size: 13px; color: var(--text-dim);">Nenhuma outra data registrada ainda.</p>
+      </div>
+    </div>
+
+    <div class="ranking-footer-note">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <span>O ranking se atualiza sozinho a cada lote verificado, comparando todas as opções de novembro.</span>
+    </div>
+  </section>
+
+  <!-- Progress Bar Card -->
+  <section class="progress-card">
+    <div class="progress-header">
+      <div class="progress-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Varredura do Mês</span>
+      </div>
+      <div class="progress-val" id="progressNumber">0 / 120 (0%)</div>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="progress-caption">
+      <span>Avanço cíclico em lotes de 2</span>
+      <span id="nextCycleText">Próxima rodada automática em breve</span>
+    </div>
+  </section>
+
+  <!-- Search Control Section -->
+  <section class="control-card">
+    <button class="btn-primary" id="btnCheckNow">
+      <span class="spinner"></span>
+      <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <span id="btnText">Disparar Varredura Agora</span>
+    </button>
+
+    <!-- Dynamic Feedback Banner -->
+    <div class="feedback-box" id="feedbackBanner">
+      <span id="feedbackIcon"></span>
+      <span id="feedbackText"></span>
+    </div>
+  </section>
+
+  <!-- Stats Grid -->
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Fonte de Dados</div>
+      <div class="stat-value">Google Flights <span class="sub">(SerpApi)</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Frequência Cron</div>
+      <div class="stat-value">A cada 6 horas <span class="sub">(4x / dia)</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Lote por Busca</div>
+      <div class="stat-value">2 combinações <span class="sub">(~240/mês)</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Notificação</div>
+      <div class="stat-value">Telegram Bot <span class="sub">(Instantâneo)</span></div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>FareRadar opera no Netlify com Scheduled Functions & Netlify Blobs.</p>
+    <p style="margin-top: 4px;">Tarifas sujeitas à disponibilidade em tempo real das companhias aéreas.</p>
+  </footer>
+</main>
+
+<script>
+  const fareContent = document.getElementById('fareContent');
+  const foundTime = document.getElementById('foundTime');
+  const progressFill = document.getElementById('progressFill');
+  const progressNumber = document.getElementById('progressNumber');
+  const btnCheckNow = document.getElementById('btnCheckNow');
+  const btnText = document.getElementById('btnText');
+  const feedbackBanner = document.getElementById('feedbackBanner');
+  const feedbackText = document.getElementById('feedbackText');
+  const originCode = document.getElementById('originCode');
+  const destCode = document.getElementById('destCode');
+  const rankingList = document.getElementById('rankingList');
+  const rankingCountBadge = document.getElementById('rankingCountBadge');
+
+  let currentConfig = {
+    origin: 'CGB',
+    destination: 'JPA',
+    totalCombos: 120
+  };
+
+  const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+  function formatDateFriendly(dateStr) {
+    if (!dateStr) return { formatted: '', weekday: '', short: '' };
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    const wd = weekdays[date.getUTCDay()];
+    const m = months[date.getUTCMonth()];
+    return {
+      formatted: `${day.toString().padStart(2, '0')} ${m} ${year}`,
+      short: `${day.toString().padStart(2, '0')} ${m}`,
+      weekday: `${wd}-feira`,
+      dayOfWeek: wd
+    };
+  }
+
+  function calculateNights(depStr, retStr) {
+    if (!depStr || !retStr) return 0;
+    const d1 = new Date(`${depStr}T00:00:00Z`);
+    const d2 = new Date(`${retStr}T00:00:00Z`);
+    const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  }
+
+  function formatBRL(value) {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      maximumFractionDigits: 0
+    }).format(value);
+  }
+
+  function renderFare(lowest) {
+    if (!lowest || lowest.price == null) {
+      foundTime.textContent = 'Nenhuma busca realizada ainda';
+      fareContent.innerHTML = `
+        <div class="empty-state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.4;">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p style="font-weight: 600; color: #fff; margin-bottom: 4px;">Nenhuma tarifa registrada no histórico</p>
+          <p style="font-size: 13px; color: var(--text-dim);">Clique em "Disparar Varredura Agora" para iniciar o rastreamento.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const dep = formatDateFriendly(lowest.departureDate);
+    const ret = formatDateFriendly(lowest.returnDate);
+    const nights = calculateNights(lowest.departureDate, lowest.returnDate);
+    const formattedPrice = formatBRL(lowest.price);
+
+    const relativeTime = lowest.foundAt 
+      ? new Date(lowest.foundAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+      : '';
+
+    foundTime.textContent = relativeTime ? `Detectado em ${relativeTime}` : '';
+
+    const gfUrl = `https://www.google.com/travel/flights?q=Flights%20to%20${currentConfig.destination}%20from%20${currentConfig.origin}%20on%20${lowest.departureDate}%20through%20${lowest.returnDate}`;
+
+    fareContent.innerHTML = `
+      <div class="price-container">
+        <span class="price-number">${formattedPrice}</span>
+        <div class="price-sub">ida e volta · taxas inclusas</div>
+      </div>
+
+      <div class="ticket-grid">
+        <div class="ticket-item">
+          <div class="ticket-label">
+            <span class="dot-dir dot-out"></span>
+            <span>Ida · ${currentConfig.origin}</span>
+          </div>
+          <div class="ticket-date">${dep.formatted}</div>
+          <div class="ticket-weekday">${dep.weekday}</div>
+        </div>
+
+        <div class="ticket-divider">
+          <span class="duration-pill">${nights} noites</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-dim);">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+
+        <div class="ticket-item" style="text-align: right;">
+          <div class="ticket-label" style="justify-content: flex-end;">
+            <span>Volta · ${currentConfig.destination}</span>
+            <span class="dot-dir dot-in"></span>
+          </div>
+          <div class="ticket-date">${ret.formatted}</div>
+          <div class="ticket-weekday">${ret.weekday}</div>
+        </div>
+      </div>
+
+      <div class="fare-actions">
+        <a href="${gfUrl}" target="_blank" rel="noopener noreferrer" class="btn-google-flights">
+          <span>Abrir no Google Flights</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
+      </div>
+    `;
+  }
+
+  function renderRanking(ranking, totalTracked) {
+    if (!ranking || ranking.length === 0) {
+      rankingCountBadge.textContent = '0 datas avaliadas';
+      rankingList.innerHTML = `
+        <div class="empty-state" style="padding: 18px;">
+          <p style="font-size: 13px; color: var(--text-dim);">Nenhuma data catalogada no ranking ainda.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const count = totalTracked || ranking.length;
+    rankingCountBadge.textContent = `${count} ${count === 1 ? 'data avaliada' : 'datas avaliadas'}`;
+
+    rankingList.innerHTML = ranking.map((item, index) => {
+      const pos = index + 1;
+      let posClass = 'rank-pos-other';
+      if (pos === 1) posClass = 'rank-pos-1';
+      else if (pos === 2) posClass = 'rank-pos-2';
+      else if (pos === 3) posClass = 'rank-pos-3';
+
+      const dep = formatDateFriendly(item.departureDate);
+      const ret = formatDateFriendly(item.returnDate);
+      const nights = calculateNights(item.departureDate, item.returnDate);
+      const price = formatBRL(item.price);
+      const gfUrl = `https://www.google.com/travel/flights?q=Flights%20to%20${currentConfig.destination}%20from%20${currentConfig.origin}%20on%20${item.departureDate}%20through%20${item.returnDate}`;
+
+      return `
+        <div class="ranking-row">
+          <div class="rank-col-pos ${posClass}">
+            ${pos === 1 ? '1º' : pos === 2 ? '2º' : pos === 3 ? '3º' : pos + 'º'}
+          </div>
+
+          <div class="rank-col-dates">
+            <div class="rank-dates-text">
+              <span>${dep.short} (${dep.dayOfWeek})</span>
+              <span class="arrow">→</span>
+              <span>${ret.short} (${ret.dayOfWeek})</span>
+            </div>
+            <div class="rank-meta-text">
+              <span>${nights} noites</span>
+              <span>•</span>
+              <span>Ida e volta</span>
+            </div>
+          </div>
+
+          <div class="rank-col-price">
+            <div class="rank-price-val">${price}</div>
+            <a href="${gfUrl}" target="_blank" rel="noopener noreferrer" class="rank-btn-link">
+              <span>Ver voo</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateProgress(cursor, total) {
+    const safeTotal = total || 120;
+    const safeCursor = cursor || 0;
+    const pct = Math.min(100, Math.round((safeCursor / safeTotal) * 100));
+
+    progressFill.style.width = `${pct}%`;
+    progressNumber.textContent = `${safeCursor} / ${safeTotal} (${pct}%)`;
+  }
+
+  function showFeedback(type, message) {
+    feedbackBanner.style.display = 'flex';
+    feedbackBanner.className = `feedback-box ${type}`;
+    feedbackText.textContent = message;
+  }
+
+  async function loadStatus() {
+    try {
+      const res = await fetch('/.netlify/functions/status');
+      if (!res.ok) throw new Error('Erro ao consultar status');
+      const data = await res.json();
+
+      if (data.config) {
+        currentConfig.origin = data.config.origin || 'CGB';
+        currentConfig.destination = data.config.destination || 'JPA';
+        originCode.textContent = currentConfig.origin;
+        destCode.textContent = currentConfig.destination;
+      }
+
+      currentConfig.totalCombos = data.totalCombos || 120;
+
+      updateProgress(data.cursor, data.totalCombos);
+      renderFare(data.lowest);
+      renderRanking(data.ranking, data.totalTracked);
+    } catch (err) {
+      console.error(err);
+      foundTime.textContent = 'Erro ao carregar dados';
+    }
+  }
+
+  async function checkNow() {
+    btnCheckNow.disabled = true;
+    btnCheckNow.classList.add('loading');
+    btnText.textContent = 'Varrendo Google Flights…';
+    feedbackBanner.style.display = 'none';
+
+    try {
+      const res = await fetch('/.netlify/functions/check-now');
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro na consulta do lote');
+      }
+
+      if (data.totalCombos) {
+        const nextCursor = data.progress ? parseInt(data.progress.split('/')[0], 10) : 0;
+        updateProgress(nextCursor, data.totalCombos);
+      }
+
+      if (data.isNewLow) {
+        showFeedback(
+          'success',
+          `🎉 Novo menor preço encontrado: ${formatBRL(data.cheapestNow.price)} (${data.cheapestNow.departureDate} a ${data.cheapestNow.returnDate})! Alerta enviado no Telegram.`
+        );
+      } else if (data.cheapestNow) {
+        showFeedback(
+          'info',
+          `Lote verificado: ${data.checked} datas testadas. Menor do lote foi ${formatBRL(data.cheapestNow.price)}, mantendo o recorde atual.`
+        );
+      } else if (data.message) {
+        showFeedback('info', data.message);
+      }
+
+      await loadStatus();
+    } catch (err) {
+      showFeedback('error', 'Falha na requisição: ' + err.message);
+    } finally {
+      btnCheckNow.disabled = false;
+      btnCheckNow.classList.remove('loading');
+      btnText.textContent = 'Disparar Varredura Agora';
+    }
+  }
+
+  btnCheckNow.addEventListener('click', checkNow);
+  loadStatus();
+</script>
+</body>
+</html>
