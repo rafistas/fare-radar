@@ -1,7 +1,7 @@
 # FareRadar · Monitor Inteligente de Passagens (CGB → JPA)
 
 App simples pra rodar no Netlify: busca automaticamente, em lotes, o menor
-preço de ida e volta entre Cuiabá e João Pessoa em novembro, com viagens de
+preço de ida e volta entre Cuiabá e João Pessoa em novembro e dezembro, com viagens de
 5 a 8 dias, e avisa no Telegram quando aparece um preço mais baixo que o
 último registrado.
 
@@ -35,10 +35,10 @@ limites da Amadeus/Duffel.
 
 Por isso o padrão aqui é conservador: `BATCH_SIZE=2` combinações por
 execução, cron a cada 6h (4x/dia) = ~8 buscas/dia = ~240/mês, com folga
-pequena pra alguns cliques manuais no botão. Com 30 dias de novembro × 4
-durações (5 a 8 dias) = 120 combinações, uma volta completa pelo mês leva
-cerca de 15 dias — como novembro ainda está a semanas de distância, dá pra
-completar várias voltas antes da viagem.
+pequena pra alguns cliques manuais no botão. Com ~61 dias (novembro e dezembro) × 4
+durações (5 a 8 dias) = 244 combinações, uma volta completa leva cerca de
+30 a 31 dias (aproximadamente um mês a 8 buscas/dia) — o que permite realizar
+voltas completas dentro da cota mensal antes da viagem.
 
 Se quiser mais velocidade, os limites a considerar são:
 - **Cota da SerpApi**: sobe de plano (a partir de US$50/mês pra 5.000
@@ -88,11 +88,12 @@ No painel do Netlify → **Site settings → Environment variables**, adicione:
 | `ORIGIN_IATA`         | não         | `CGB` (padrão)  |
 | `DESTINATION_IATA`    | não         | `JPA` (padrão)  |
 | `DEPARTURE_FROM`      | não         | `2026-11-01`    |
-| `DEPARTURE_TO`        | não         | `2026-11-30`    |
+| `DEPARTURE_TO`        | não         | `2026-12-31`    |
 | `MIN_DURATION`        | não         | `5`             |
 | `MAX_DURATION`        | não         | `8`             |
 | `CURRENCY`            | não         | `BRL` (padrão)  |
 | `BATCH_SIZE`          | não         | `2` (padrão)    |
+| `TARGET_PRICE`        | não         | opcional (ex: `1200`) |
 
 Depois de adicionar as variáveis, faça um novo deploy pra elas entrarem em vigor.
 
