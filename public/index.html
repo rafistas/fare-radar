@@ -10,6 +10,9 @@
   <meta name="apple-mobile-web-app-title" content="FareRadar" />
   <meta name="description" content="FareRadar · Monitor inteligente de passagens aéreas CGB para JPA com SerpApi e Google Flights." />
   <title>FareRadar · CGB → JPA · Monitor Inteligente de Voos</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="alternate icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -525,7 +528,7 @@
     }
 
     .btn-google-flights {
-      flex: 1;
+      flex: 1.2;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -553,6 +556,62 @@
     .btn-google-flights:active {
       transform: scale(0.985);
       background: rgba(255, 255, 255, 0.14);
+    }
+
+    .btn-recheck-fare {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: var(--cyan);
+      padding: 13px 18px;
+      min-height: 48px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .btn-recheck-fare:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.45);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.15);
+    }
+
+    .btn-recheck-fare:active {
+      transform: scale(0.985);
+    }
+
+    .btn-recheck-fare:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .stale-warning-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(245, 158, 11, 0.09);
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      color: #fbbf24;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.4;
+      margin-bottom: 16px;
+    }
+
+    .stale-warning-banner svg {
+      flex-shrink: 0;
     }
 
     /* Ranking Section */
@@ -743,6 +802,12 @@
       color: #fff;
     }
 
+    .rank-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .rank-btn-badge {
       display: inline-flex;
       align-items: center;
@@ -760,6 +825,46 @@
     .ranking-row:hover .rank-btn-badge {
       background: rgba(56, 189, 248, 0.2);
       border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .rank-btn-recheck {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .rank-btn-recheck:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: var(--cyan);
+      transform: scale(1.08);
+    }
+
+    .rank-btn-recheck:active {
+      transform: scale(0.92);
+    }
+
+    .rank-btn-recheck:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .recheck-spinner-icon.spinning {
+      animation: spin 0.8s linear infinite;
+    }
+
+    .rank-stale-tag {
+      color: #fbbf24 !important;
+      font-weight: 600;
     }
 
     .ranking-footer-note {
@@ -1161,7 +1266,14 @@
         opacity: 0.6;
       }
 
-      .btn-google-flights {
+      .fare-actions {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .btn-google-flights,
+      .btn-recheck-fare {
+        width: 100%;
         padding: 12px 16px;
         font-size: 13px;
       }
@@ -1347,7 +1459,7 @@
     <div class="fare-header">
       <div class="badge-record">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <span>Menor Tarifa Detectada</span>
+        <span>Menor Tarifa Vigente</span>
       </div>
       <div class="found-timestamp" id="foundTime">Carregando dados…</div>
     </div>
@@ -1508,6 +1620,25 @@
     }).format(value);
   }
 
+  function formatRelativeTime(isoDate) {
+    if (!isoDate) return { text: '', isStale: false, fullDate: '' };
+    const date = new Date(isoDate);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMin = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const fullDate = date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+    if (diffMin < 2) return { text: 'Verificado agora mesmo', isStale: false, fullDate };
+    if (diffMin < 60) return { text: `Verificado há ${diffMin} min`, isStale: false, fullDate };
+    if (diffHours === 1) return { text: 'Verificado há 1 hora', isStale: false, fullDate };
+    if (diffHours < 24) return { text: `Verificado há ${diffHours}h`, isStale: false, fullDate };
+    if (diffDays === 1) return { text: 'Verificado ontem', isStale: false, fullDate };
+    if (diffDays <= 3) return { text: `Verificado há ${diffDays} dias`, isStale: false, fullDate };
+    return { text: `Verificado há ${diffDays} dias`, isStale: true, fullDate };
+  }
+
   function renderFare(lowest) {
     if (!lowest || lowest.price == null) {
       foundTime.textContent = 'Nenhuma busca realizada ainda';
@@ -1528,15 +1659,22 @@
     const nights = calculateNights(lowest.departureDate, lowest.returnDate);
     const formattedPrice = formatBRL(lowest.price);
 
-    const relativeTime = lowest.foundAt 
-      ? new Date(lowest.foundAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
-      : '';
-
-    foundTime.textContent = relativeTime ? `Detectado em ${relativeTime}` : '';
+    const timeInfo = formatRelativeTime(lowest.foundAt || lowest.updatedAt);
+    foundTime.textContent = timeInfo.text ? `${timeInfo.text} (${timeInfo.fullDate})` : '';
 
     const gfUrl = `https://www.google.com/travel/flights?q=Flights%20to%20${currentConfig.destination}%20from%20${currentConfig.origin}%20on%20${lowest.departureDate}%20through%20${lowest.returnDate}`;
 
+    const staleWarningHtml = timeInfo.isStale
+      ? `
+        <div class="stale-warning-banner" title="Esta tarifa foi verificada há mais de 3 dias e pode ter variado nas companhias aéreas.">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Tarifa verificada há mais de 3 dias. Clique em <strong>Rechecar Tarifa</strong> para conferir o preço ao vivo.</span>
+        </div>
+      `
+      : '';
+
     fareContent.innerHTML = `
+      ${staleWarningHtml}
       <div class="price-container">
         <span class="price-number">${formattedPrice}</span>
         <div class="price-sub">ida e volta · taxas inclusas</div>
@@ -1585,6 +1723,13 @@
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
           </svg>
         </a>
+
+        <button type="button" class="btn-recheck-fare" id="btnRecheckMain" data-dep="${lowest.departureDate}" data-ret="${lowest.returnDate}" title="Reconsultar preço desta data no Google Flights agora (gasta apenas 1 busca)">
+          <svg class="recheck-spinner-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <span class="btn-recheck-label">Rechecar Tarifa</span>
+        </button>
       </div>
     `;
   }
@@ -1616,6 +1761,9 @@
       const price = formatBRL(item.price);
       const gfUrl = `https://www.google.com/travel/flights?q=Flights%20to%20${currentConfig.destination}%20from%20${currentConfig.origin}%20on%20${item.departureDate}%20through%20${item.returnDate}`;
 
+      const timeInfo = formatRelativeTime(item.updatedAt || item.foundAt);
+      const timeTag = timeInfo.text ? timeInfo.text.replace('Verificado ', '') : '';
+
       return `
         <a href="${gfUrl}" target="_blank" rel="noopener noreferrer" class="ranking-row" title="Ver voo no Google Flights">
           <div class="rank-col-pos ${posClass}">
@@ -1632,16 +1780,24 @@
               <span>${nights} noites</span>
               <span>•</span>
               <span>Ida e volta</span>
+              ${timeTag ? `<span>•</span><span class="${timeInfo.isStale ? 'rank-stale-tag' : ''}">${timeTag}</span>` : ''}
             </div>
           </div>
 
           <div class="rank-col-price">
             <div class="rank-price-val">${price}</div>
-            <div class="rank-btn-badge">
-              <span>Ver voo</span>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-              </svg>
+            <div class="rank-actions-group">
+              <div class="rank-btn-badge">
+                <span>Ver voo</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+              </div>
+              <button type="button" class="rank-btn-recheck" data-dep="${item.departureDate}" data-ret="${item.returnDate}" title="Rechecar preço desta data agora">
+                <svg class="recheck-spinner-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              </button>
             </div>
           </div>
         </a>
@@ -1738,6 +1894,64 @@
       btnText.textContent = 'Disparar Varredura Agora';
     }
   }
+
+  async function triggerRecheck(dep, ret, buttonEl) {
+    if (!dep || !ret) return;
+    const icon = buttonEl ? buttonEl.querySelector('.recheck-spinner-icon') : null;
+    const label = buttonEl ? buttonEl.querySelector('.btn-recheck-label') : null;
+    const originalText = label ? label.textContent : '';
+
+    if (buttonEl) buttonEl.disabled = true;
+    if (icon) icon.classList.add('spinning');
+    if (label) label.textContent = 'Rechecando…';
+
+    showFeedback('info', `Consultando preço ao vivo no Google Flights para ida ${dep} e volta ${ret}…`);
+
+    try {
+      const res = await fetch(`/.netlify/functions/recheck-one?dep=${encodeURIComponent(dep)}&ret=${encodeURIComponent(ret)}`);
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Erro ao rechecar tarifa.');
+      }
+
+      if (data.success && data.fare) {
+        showFeedback(
+          'success',
+          `Tarifa atualizada com sucesso: ${formatBRL(data.fare.price)} (${data.fare.departureDate} a ${data.fare.returnDate}). Painel sincronizado!`
+        );
+      } else {
+        showFeedback('warning', data.message || 'Nenhum voo retornado pela companhia para essas datas.');
+      }
+
+      await loadStatus();
+    } catch (err) {
+      console.error(err);
+      showFeedback('error', `Falha ao rechecar: ${err.message}`);
+    } finally {
+      if (buttonEl) buttonEl.disabled = false;
+      if (icon) icon.classList.remove('spinning');
+      if (label) label.textContent = originalText;
+    }
+  }
+
+  fareContent.addEventListener('click', (e) => {
+    const btn = e.target.closest('#btnRecheckMain');
+    if (btn) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerRecheck(btn.dataset.dep, btn.dataset.ret, btn);
+    }
+  });
+
+  rankingList.addEventListener('click', (e) => {
+    const btn = e.target.closest('.rank-btn-recheck');
+    if (btn) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerRecheck(btn.dataset.dep, btn.dataset.ret, btn);
+    }
+  });
 
   btnCheckNow.addEventListener('click', checkNow);
   loadStatus();

@@ -152,4 +152,53 @@ export async function saveFares(newFares) {
   const local = getLocalStore();
   local[FARES_KEY] = currentFares;
   setLocalStore(local);
+
+  // Mantém o recorde histórico atualizado se encontrarmos um novo menor valor absoluto
+  try {
+    const historical = await getLowestKnown();
+    let bestNew = null;
+    for (const fare of newFares) {
+      if (fare && fare.price != null) {
+        if (!bestNew || fare.price < bestNew.price) {
+          bestNew = fare;
+        }
+      }
+    }
+    if (bestNew && (!historical || bestNew.price < historical.price)) {
+      await setLowestKnown({
+        departureDate: bestNew.departureDate,
+        returnDate: bestNew.returnDate,
+        price: bestNew.price,
+        currency: bestNew.currency || 'BRL',
+        foundAt: now,
+      });
+    }
+  } catch (err) {
+    console.warn('Aviso ao sincronizar recorde histórico:', err.message);
+  }
 }
+
+/**
+ * Retorna a menor tarifa atualmente válida no mapa de tarifas ativas.
+ * Caso não haja nenhuma no mapa, faz fallback para a última conhecida.
+ */
+export async function getCurrentLowestFare() {
+  const faresMap = await getAllFares();
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const activeFares = Object.values(faresMap).filter(f =>
+    f &&
+    f.price != null &&
+    (!f.departureDate || f.departureDate >= todayStr)
+  );
+
+  if (activeFares.length === 0) {
+    return await getLowestKnown();
+  }
+
+  return activeFares.reduce((min, f) => (f.price < min.price ? f : min));
+}
+
+export const getHistoricalLowest = getLowestKnown;
+export const setHistoricalLowest = setLowestKnown;
+
