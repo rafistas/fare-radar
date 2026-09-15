@@ -16,7 +16,7 @@ function addDays(dateStr, days) {
   return d.toISOString().slice(0, 10);
 }
 
-async function searchOneCombo({ origin, destination, departureDate, returnDate, currency }) {
+export async function searchOneCombo({ origin, destination, departureDate, returnDate, currency }) {
   const apiKey = process.env.SERPAPI_API_KEY;
   if (!apiKey) {
     throw new Error('Falta a variável de ambiente SERPAPI_API_KEY no Netlify.');
